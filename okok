@@ -1,3 +1,22 @@
+<div *ngIf="post; else loading">
+  <h2>{{ post.post_header }}</h2>
+  <p><strong>Posted By:</strong> {{ post.posted_by }}</p>
+  <p><strong>Status:</strong> {{ post.status }}</p>
+  <p><strong>Posted At:</strong> {{ post.posted_at | date:'medium' }}</p>
+  <hr />
+  <p>{{ post.post_content }}</p>
+</div>
+
+<ng-template #loading>
+  <p>Loading post details...</p>
+</ng-template>
+
+
+
+
+###
+
+
 i have post service.ts
 
 getPostById(postId: number): Observable<Post> {
