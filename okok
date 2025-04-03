@@ -1,48 +1,67 @@
-<div *ngIf="post; else loading">
+/* Container Styling */
+.post-container {
+  background-color: #ffffffd3; /* Light White Background */
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 700px;
+  margin: 20px auto;
+  border-left: 6px solid #b38b07d8; /* Yellow left border for styling */
+}
+
+/* Heading Styling */
+.post-container h2 {
+  color: #b38b07d8; /* Yellow */
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Meta Information Styling */
+.post-container p {
+  color: #333;
+  font-size: 16px;
+  margin: 5px 0;
+}
+
+/* Strong Text Styling */
+.post-container p strong {
+  color: #b38b07d8; /* Yellow */
+}
+
+/* Post Content Styling */
+.post-container hr {
+  border: 0;
+  height: 2px;
+  background: #b38b07d8;
+  margin: 15px 0;
+}
+
+.post-content {
+  font-size: 18px;
+  color: #444;
+  line-height: 1.6;
+}
+
+/* Loading Message Styling */
+.loading-message {
+  text-align: center;
+  font-size: 18px;
+  color: #b38b07d8;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+
+<div *ngIf="post; else loading" class="post-container">
   <h2>{{ post.post_header }}</h2>
   <p><strong>Posted By:</strong> {{ post.posted_by }}</p>
   <p><strong>Status:</strong> {{ post.status }}</p>
   <p><strong>Posted At:</strong> {{ post.posted_at | date:'medium' }}</p>
   <hr />
-  <p>{{ post.post_content }}</p>
+  <p class="post-content">{{ post.post_content }}</p>
 </div>
 
 <ng-template #loading>
-  <p>Loading post details...</p>
+  <p class="loading-message">Loading post details...</p>
 </ng-template>
-
-
-
-
-###
-
-
-i have post service.ts
-
-getPostById(postId: number): Observable<Post> {
-          return this.http.get<Post>(`http://localhost:8080/api/posts/byid/${postId}`);
-        }
-
-
-and one component viewpost i want display post data in this component 
-
-how to display the data jason data coming from backed 
-{
-  "post_id": 35,
-  "post_header": "API Rate Limiting",
-  "post_content": "Introduced rate limiting on APIs to prevent abuse and ensure fair usage. This helps maintain server performance and availability during high traffic periods.\n",
-  "status": "ACTIVE",
-  "posted_by": "Chetan",
-  "posted_at": "2025-04-03T00:18:57.847648+05:30"
-}
-
-post.model.ts
-export interface Post{
-    post_id : number;
-    post_header : string;
-    post_content : string;
-    status: string;
-    posted_by:string;
-    posted_at: string; 
-
-}
