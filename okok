@@ -1,0 +1,29 @@
+i have post service.ts
+
+getPostById(postId: number): Observable<Post> {
+          return this.http.get<Post>(`http://localhost:8080/api/posts/byid/${postId}`);
+        }
+
+
+and one component viewpost i want display post data in this component 
+
+how to display the data jason data coming from backed 
+{
+  "post_id": 35,
+  "post_header": "API Rate Limiting",
+  "post_content": "Introduced rate limiting on APIs to prevent abuse and ensure fair usage. This helps maintain server performance and availability during high traffic periods.\n",
+  "status": "ACTIVE",
+  "posted_by": "Chetan",
+  "posted_at": "2025-04-03T00:18:57.847648+05:30"
+}
+
+post.model.ts
+export interface Post{
+    post_id : number;
+    post_header : string;
+    post_content : string;
+    status: string;
+    posted_by:string;
+    posted_at: string; 
+
+}
