@@ -1,3 +1,22 @@
+
+:[0;39m HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: alter table newso.posts modify posted_at TIMESTAMP WITH TIME ZONE
+[2m2025-04-04T22:58:58.736+05:30[0;39m [33m WARN[0;39m [35m21820[0;39m [2m--- [iss] [  restartedMain] [0;39m[36mo.h.t.s.i.ExceptionHandlerLoggedImpl    [0;39m [2m:[0;39m GenerationTarget encountered exception accepting command : Error executing DDL "alter table newso.posts modify posted_at TIMESTAMP WITH TIME ZONE" via JDBC [ORA-00054: resource busy and acquire with NOWAIT specified or timeout expired
+
+https://docs.oracle.com/error-help/db/ora-00054/]
+
+org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "alter table newso.posts modify posted_at TIMESTAMP WITH TIME ZONE" via JDBC [ORA-00054: resource busy and acquire with NOWAIT specified or timeout expired
+
+https://docs.oracle.com/error-help/db/ora-00054/]
+
+
+: resource busy and acquire with NOWAIT specified or timeout expired
+
+
+this erro is coming when i am runnin the spring boot applicatino after above changes 
+
+fix this
+
 @Autowired
 private CategoryRepository categoryRepository;
 
