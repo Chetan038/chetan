@@ -1,3 +1,40 @@
+@Autowired
+private CategoryRepository categoryRepository;
+
+@Override
+public Posts createPost(Posts post) {
+    if (post.getCategory() != null && post.getCategory().getCategoryId() != null) {
+        Category category = categoryRepository.findById(post.getCategory().getCategoryId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid Category ID"));
+        post.setCategory(category);
+    }
+    return postRepository.save(post);
+}
+
+@Override
+public Posts editPost(long postid, Posts post) {
+    if (!postRepository.existsById(postid)) {
+        return null;
+    }
+
+    post.setPost_id(postid);
+    if (post.getCategory() != null && post.getCategory().getCategoryId() != null) {
+        Category category = categoryRepository.findById(post.getCategory().getCategoryId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid Category ID"));
+        post.setCategory(category);
+    }
+
+    return postRepository.save(post);
+}
+
+
+
+
+
+@@@@
+
+
+
 this is my spring boot backend
 
 postController.java
