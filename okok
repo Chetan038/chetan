@@ -1,3 +1,21 @@
+
+Error starting at line : 148 in command -
+INSERT INTO NEWSO.POSTS (POST_SEQ_ID, POST_HEADER, POST_CONTENT, STATUS, POSTED_BY, CATEGORY_ID) 
+VALUES (9, 'Latest Tech Trends', 'This is about AI and ML...', 'ACTIVE', 'CHETAN', 1)
+Error at Command Line : 148 Column : 19
+Error report -
+SQL Error: ORA-04098: trigger 'NEWSO.POSTS_BEFORE_INSERT' is invalid and failed re-validation
+04098. 00000 -  "trigger '%s.%s' is invalid and failed re-validation"
+*Cause:    A trigger was attempted to be retrieved for execution and was
+           found to be invalid.  This also means that compilation/authorization
+           failed for the trigger.
+*Action:   Options are to resolve the compilation/authorization errors,
+           disable the trigger, or drop the trigger.
+
+
+fix this error
+
+
 -- Step 1: Create CATEGORY Table
 CREATE TABLE NEWSO.CATEGORY (
     CATEGORY_ID NUMBER PRIMARY KEY,
