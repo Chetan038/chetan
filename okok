@@ -1,3 +1,12 @@
+SELECT 
+    p.POST_HEADER, 
+    p.POST_CONTENT
+FROM NEWSO.POSTS p
+JOIN NEWSO.CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
+WHERE c.CATEGORY_NAME = 'Technology';  -- Change 'Technology' to the desired category
+  
+
+
 DROP TRIGGER NEWSO.POSTS_BEFORE_INSERT;
 
 
