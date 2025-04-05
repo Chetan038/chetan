@@ -1,89 +1,3 @@
- filterPosts(posts: Post[], searchTerm: string): Post[] {
-    if (!searchTerm.trim()) return posts;
-    return posts.filter(post =>
-      post.post_header.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }
-
-  // [✅ New] When user types in search bar
-  updateSearch(category: string, event: any) {
-    this.searchTerms[category] = event.target.value;
-  }
-
-@@
-
-
-
-this is my post model.ts
-
-export interface Category{
-    categoryId: number;
-    categoryName:string;
-}
-export interface Post{
-    post_id : number;
-    post_header : string;
-    post_content : string;
-    status: string;
-    posted_by:string;
-    posted_at: string; 
-    category: Category;
-    
-
-}
-
-postservice.ts
-import { HttpClient } from '@angular/common/http';
-      import { Injectable } from '@angular/core';
-      import { Observable } from 'rxjs';
-      import {Post} from './post.model';
-
-      @Injectable({
-        providedIn: 'root'
-      })
-      export class PostService {
-
-        private apiUrlt='http://localhost:8080/api/posts/all';
-        private posturl='http://localhost:8080/api/posts/create';
-        private deleteurl='http://localhost:8080/api/posts/delete';
-        private editurl='http://localhost:8080/api/posts/edit';
-        private toggleurl='http://localhost:8080/api/posts/togglestatus';
-
-        constructor(private http:HttpClient) { }
-
-        getPosts(): Observable<Post[]>{
-          return this.http.get<Post[]>(this.apiUrlt);
-        }
-
-        togglestatus(post_id:number):Observable<any>{
-          return this.http.put(`${this.toggleurl}/${post_id}`,{});
-        }
-
-        createPost(data:any):Observable<any>{
-          return this.http.post(this.posturl,data);
-        }
-
-        editPost(post:Post):Observable<Post>{
-          return this.http.put<Post>(`${this.editurl}/${post.post_id}`,post);
-        }
-
-        deletePost(postid: number ):Observable<any>{
-          return this.http.delete(`${this.deleteurl}/${postid}`)
-        }
-
-        getPostById(postId: number): Observable<Post> {
-          return this.http.get<Post>(`http://localhost:8080/api/posts/byid/${postId}`);
-        }
-        
-        getCategories(){
-          return this.http.get<any[]>('http://localhost:8080/category/all');
-        }
-
-
-      }
-
-
-home.comopenet.html(where all post are displayed)
 <div class="post-container">
   <div class="post-row">
     <ng-container *ngFor="let post of posts">
@@ -116,77 +30,9 @@ home.comopenet.html(where all post are displayed)
   </div>
 </div>
 
-home.component.ts
 
-import { Component, OnInit } from '@angular/core';
-import { LoginService } from '../../services/login.service';
-import {Post} from '../../services/post.model'
-import { PostService } from '../../services/post.service';
-import { MatDialog } from '@angular/material/dialog';
-import { Router } from '@angular/router';
-import { EditPostModalComponent } from '../edit-post-modal/edit-post-modal.component';
+css
 
-
-@Component({
-  selector: 'app-home',
-  standalone: false,
-  templateUrl: './home.component.html',
-  styleUrl: './home.component.css'
-})
-export class HOMEComponent implements OnInit{
-
-    posts: Post[]=[];
-    public loggedIn=false;
-  
-    constructor(private readonly loginService:LoginService, private postService:PostService,private dialog:MatDialog,private router:Router){}
-    ngOnInit(): void {
-      this.loggedIn=this.loginService.isLoggedIn();
-      this.loadPosts();
-
-    }
-
-    loadPosts(){
-      this.postService.getPosts().subscribe(
-        (data: Post[])=>{
-          console.log('posts',data);
-          this.posts=data;
-        },
-      (error)=>{console.error('erro',error);}
-      );
-      
-    }
-
-    deletePost(postid:number){
-      if(confirm('are you sure?'))
-      {
-        this.postService.deletePost(postid).subscribe(()=>{
-          this.posts=this.posts.filter(pst => pst.post_id!==postid);
-        });
-      }
-    }
-
-
-    togglestatus(post:Post):void{
-      this.postService.togglestatus(post.post_id).subscribe((updatedPost)=>
-      {
-        post.status=updatedPost.status;
-      });
-    }
-
-    editPost(postId:number){
-      this.router.navigate(['/new-post',postId]);
-    }
-
-    viewPost(postId:number){
-      this.router.navigate(['/viewpost',postId],{queryParams:{mode:'view'}});
-    }
-
-
-  
-}
-
-
-home.component.css
 .post-table {
   width: 100%;
   height: 100%;
@@ -323,16 +169,4 @@ button {
   background-color: #c50606;
 }
 
-
-now i want to make div dinamiclly according to all categorry if any catergory post is not there the
-dont show that div and in catery div this post should should be displayed in that div means all similar
-post card should be displyed in that category div  and each div category should have a search feature
-so when we enter post head in search bar it shuld display the post card first in that div and other post
-should not show only post heading matching to serch bar value only show in that div same for every div 
-cateogry 
-
-
-
-
-
-
+so this is my css and html file make changes in this and maintian the theme dont change thenme
