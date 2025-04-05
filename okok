@@ -1,3 +1,19 @@
+ filterPosts(posts: Post[], searchTerm: string): Post[] {
+    if (!searchTerm.trim()) return posts;
+    return posts.filter(post =>
+      post.post_header.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
+
+  // [✅ New] When user types in search bar
+  updateSearch(category: string, event: any) {
+    this.searchTerms[category] = event.target.value;
+  }
+
+@@
+
+
+
 this is my post model.ts
 
 export interface Category{
