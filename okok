@@ -11,12 +11,11 @@ import { LoginService } from '../../services/login.service';
   styleUrl: './new-post.component.css'
 })
 export class NewPostComponent implements OnInit {
-
+ 
   posts: Post[] = [];
   isEditMode = false;
   isViewMode = false;
   statusValue: string = "ACTIVE";
-
   categories: any[] = [];
 
   post = {
@@ -44,12 +43,10 @@ export class NewPostComponent implements OnInit {
       this.post.posted_by = storedUsername;
     }
 
-    // Load categories
     this.postService.getCategories().subscribe(data => {
       this.categories = data;
     });
 
-    // Check for edit/view mode
     this.route.params.subscribe(params => {
       const postId = params['id'];
       if (postId) {
@@ -59,11 +56,10 @@ export class NewPostComponent implements OnInit {
         this.route.queryParams.subscribe(queryParams => {
           if (queryParams['mode'] === 'view') {
             this.isViewMode = true;
-            this.isEditMode = false;
+            this.isEditMode = false; // Prevent editing in view mode
           }
         });
 
-        // Fetch post details for editing
         this.postService.getPosts().subscribe(posts => {
           this.posts = posts;
           const postToEdit = this.posts.find(p => p.post_id === numericPostId);
@@ -86,14 +82,14 @@ export class NewPostComponent implements OnInit {
   }
 
   submitPostForm() {
-    // Prepare payload with category object (required by backend)
+    const { categoryId, ...rest } = this.post;
+
     const postPayload = {
-      ...this.post,
+      ...rest,
       category: {
-        categoryId: this.post.categoryId
+        categoryId: categoryId
       }
     };
-    delete postPayload.categoryId;
 
     if (this.isEditMode) {
       this.postService.editPost(postPayload as Post).subscribe({
