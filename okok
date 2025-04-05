@@ -1,67 +1,322 @@
-<div class="container" [ngClass]="{'edit-mode': isEditMode}">
-  <form>
-    <div class="editid" *ngIf="isEditMode" hidden>
-      <label for="postId">Post ID</label>
-      <input type="text" id="postId" name="postId" [(ngModel)]="post.post_id" readonly>
-    </div>
+this is my post model.ts
 
-    <div class="editstatus" *ngIf="isEditMode">
-      <label for="status">Status</label>
-      <select id="status" name="status" [(ngModel)]="post.status">
-        <option value="ACTIVE">ACTIVE</option>
-        <option value="INACTIVE">INACTIVE</option>
-      </select>
-    </div>
+export interface Category{
+    categoryId: number;
+    categoryName:string;
+}
+export interface Post{
+    post_id : number;
+    post_header : string;
+    post_content : string;
+    status: string;
+    posted_by:string;
+    posted_at: string; 
+    category: Category;
+    
 
-    <div class="form-group" hidden>
-      <label for="postedBy">Posted By</label>
-      <input type="text" id="postedBy" name="postedBy" [(ngModel)]="post.posted_by" readonly>
-    </div>
+}
 
-    <div class="form-group" *ngIf="!isEditMode">
-      <label for="postHeader">Post Heading</label>
-      <input type="text" id="postHeader" name="postHeader" [(ngModel)]="post.post_header" [readonly]="isViewMode" placeholder="Enter New Post Heading Here" required>
-    </div>
+postservice.ts
+import { HttpClient } from '@angular/common/http';
+      import { Injectable } from '@angular/core';
+      import { Observable } from 'rxjs';
+      import {Post} from './post.model';
 
-    <div class="editheader" *ngIf="isEditMode">
-      <label for="postHeader">Post Heading</label>
-      <input type="text" id="postHeader" name="postHeader" [(ngModel)]="post.post_header" [readonly]="isViewMode" required>
-    </div>
+      @Injectable({
+        providedIn: 'root'
+      })
+      export class PostService {
 
-    <div class="contentbox" *ngIf="!isEditMode">
-      <label for="postContent">Post Content</label>
-      <textarea id="postContent" name="postContent" [(ngModel)]="post.post_content" [readonly]="isViewMode" placeholder="Enter New Post Content Here" required></textarea>
-    </div>
+        private apiUrlt='http://localhost:8080/api/posts/all';
+        private posturl='http://localhost:8080/api/posts/create';
+        private deleteurl='http://localhost:8080/api/posts/delete';
+        private editurl='http://localhost:8080/api/posts/edit';
+        private toggleurl='http://localhost:8080/api/posts/togglestatus';
 
-    <div class="editcontentbox" *ngIf="isEditMode">
-      <label for="postContent">Post Content</label>
-      <textarea class="edittextarea" id="postContent" name="postContent" [(ngModel)]="post.post_content" [readonly]="isViewMode" required></textarea>
-    </div>
+        constructor(private http:HttpClient) { }
 
-    <!-- Fixed Category Dropdown -->
-    <div class="cat">
-      <label for="category">Category</label>
-      <select id="category" name="category" [(ngModel)]="post.category.categoryId" required>
-        <option *ngFor="let category of categories" [value]="category.categoryId">
-          {{ category.categoryName }}
-        </option>
-      </select>
-    </div>
+        getPosts(): Observable<Post[]>{
+          return this.http.get<Post[]>(this.apiUrlt);
+        }
 
-    <div class="button-group" *ngIf="!isEditMode && !isViewMode">
-      <button type="submit" (click)="submitPostForm()">{{ isEditMode ? 'Update' : 'Submit' }}</button>
-      <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
-    </div>
+        togglestatus(post_id:number):Observable<any>{
+          return this.http.put(`${this.toggleurl}/${post_id}`,{});
+        }
 
-    <div class="editpostbuttons" *ngIf="isEditMode">
-      <button type="submit" (click)="submitPostForm()">{{ isEditMode ? 'Update' : 'Submit' }}</button>
-      <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
-    </div>
-  </form>
+        createPost(data:any):Observable<any>{
+          return this.http.post(this.posturl,data);
+        }
 
-  <div class="illustration">
-    <img src="" *ngIf="!isEditMode">
+        editPost(post:Post):Observable<Post>{
+          return this.http.put<Post>(`${this.editurl}/${post.post_id}`,post);
+        }
+
+        deletePost(postid: number ):Observable<any>{
+          return this.http.delete(`${this.deleteurl}/${postid}`)
+        }
+
+        getPostById(postId: number): Observable<Post> {
+          return this.http.get<Post>(`http://localhost:8080/api/posts/byid/${postId}`);
+        }
+        
+        getCategories(){
+          return this.http.get<any[]>('http://localhost:8080/category/all');
+        }
+
+
+      }
+
+
+home.comopenet.html(where all post are displayed)
+<div class="post-container">
+  <div class="post-row">
+    <ng-container *ngFor="let post of posts">
+      <div class="post-card" *ngIf="post.status === 'ACTIVE' || loggedIn">
+        <div class="post-header">
+          <h3>{{ post.post_header }}</h3>
+        </div>
+
+        <div class="post-info">
+          <p class="posted-by" *ngIf="loggedIn"><strong>Posted ID:</strong> {{ post.post_id}}</p>
+          <p class="posted-by"><strong>Posted by:</strong> {{ post.posted_by }}</p>
+          <p class="post-time"><strong>Posted at:</strong> {{ post.posted_at | date:'MMM d, y h:mm a' }}</p>
+        </div>
+
+        <div class="post-content">
+          <p>{{ post.post_content }}</p>
+        </div>
+
+        <div class="post-buttons" >
+          <button class="btn-1" (click)="togglestatus(post)" *ngIf="loggedIn">
+            {{ post.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+          </button>
+          <button class="btn-1" (click)="editPost(post.post_id)" *ngIf="loggedIn">Edit Post</button>
+          <button class="btn-1" (click)="viewPost(post.post_id)">view</button>
+          <button class="btn-2" (click)="deletePost(post.post_id)" *ngIf="loggedIn">Delete</button>
+         
+        </div>
+      </div>
+    </ng-container>
   </div>
 </div>
 
-<p *ngIf="responseMessage">{{ responseMessage }}</p>
+home.component.ts
+
+import { Component, OnInit } from '@angular/core';
+import { LoginService } from '../../services/login.service';
+import {Post} from '../../services/post.model'
+import { PostService } from '../../services/post.service';
+import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
+import { EditPostModalComponent } from '../edit-post-modal/edit-post-modal.component';
+
+
+@Component({
+  selector: 'app-home',
+  standalone: false,
+  templateUrl: './home.component.html',
+  styleUrl: './home.component.css'
+})
+export class HOMEComponent implements OnInit{
+
+    posts: Post[]=[];
+    public loggedIn=false;
+  
+    constructor(private readonly loginService:LoginService, private postService:PostService,private dialog:MatDialog,private router:Router){}
+    ngOnInit(): void {
+      this.loggedIn=this.loginService.isLoggedIn();
+      this.loadPosts();
+
+    }
+
+    loadPosts(){
+      this.postService.getPosts().subscribe(
+        (data: Post[])=>{
+          console.log('posts',data);
+          this.posts=data;
+        },
+      (error)=>{console.error('erro',error);}
+      );
+      
+    }
+
+    deletePost(postid:number){
+      if(confirm('are you sure?'))
+      {
+        this.postService.deletePost(postid).subscribe(()=>{
+          this.posts=this.posts.filter(pst => pst.post_id!==postid);
+        });
+      }
+    }
+
+
+    togglestatus(post:Post):void{
+      this.postService.togglestatus(post.post_id).subscribe((updatedPost)=>
+      {
+        post.status=updatedPost.status;
+      });
+    }
+
+    editPost(postId:number){
+      this.router.navigate(['/new-post',postId]);
+    }
+
+    viewPost(postId:number){
+      this.router.navigate(['/viewpost',postId],{queryParams:{mode:'view'}});
+    }
+
+
+  
+}
+
+
+home.component.css
+.post-table {
+  width: 100%;
+  height: 100%;
+  border-spacing: 15px;
+  background: linear-gradient(135deg, #ffffff, #2999e342);
+} 
+
+.post-container{
+  background: linear-gradient(135deg, #ffffffd3, #2999e34e); 
+  background-image: url('https://companieslogo.com/img/orig/LH-8eb9cabe.png?t=1720244492');
+  background-size: 800px 800px; /* Sets the width and height of the image */
+  background-repeat: no-repeat; /* Prevents the image from repeating */
+  background-position: 600px -290px; /* Centers the image in the container */
+
+}
+/* Row Flexbox */
+.post-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+/* Card Style with Shadow */
+.post-card {
+  width: 250px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  border: 1px solid #ddd;
+  padding: 10px;
+  transition: transform 0.3s ease-in-out;
+  margin: 20px;
+  height: 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Fixed Header Height */ 
+.post-header {
+  background: #3a5ce9;
+  color: rgb(255, 255, 255);
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 10px 10px 0 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+/* Smaller Post Info Section */
+.post-info {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1);
+  padding: 5px;
+  border-radius: 5px;
+  font-size: 10px; /* Reduced font size */
+  margin: 5px;
+  line-height: 1.2;
+}
+
+/* Light Color and Smaller Size for Text */
+.posted-by, .post-status, .post-time {
+  padding: 1px 0;
+  margin: 0;
+  text-align: left;
+  color: #777;
+  font-weight: normal;
+  font-size: 10px; /* Smaller text */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Content Section with Hidden Scrollbar */
+.post-content {
+  padding: 5px;
+  font-size: 12px;
+  color: #333;
+  text-align: center;
+  height: 180px; /* Adjusted height */
+  overflow-y: scroll;
+  scrollbar-width: none;
+}
+
+.post-content::-webkit-scrollbar {
+  
+  display: none;
+}
+
+/* Button Container (For Logged-in Users) */
+.post-buttons {
+  display: flex;
+  justify-content: space-evenly;
+  padding: 5px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+  position: relative;
+  bottom: 0;
+  width: 100%;
+}
+
+/* Buttons */
+button {
+  position: relative;
+  top: 15%;
+  background-color: #4cd5f7;
+  color: rgb(0, 0, 0);
+  padding: 4px 7px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover{
+  background-color: #3a5ce9;
+  color: rgb(255, 255, 255);
+}
+
+
+.btn-2 {
+  background-color: #f50909bb;
+}
+
+.btn-2:hover {
+  background-color: #c50606;
+}
+
+
+now i want to make div dinamiclly according to all categorry if any catergory post is not there the
+dont show that div and in catery div this post should should be displayed in that div means all similar
+post card should be displyed in that category div  and each div category should have a search feature
+so when we enter post head in search bar it shuld display the post card first in that div and other post
+should not show only post heading matching to serch bar value only show in that div same for every div 
+cateogry 
+
+
+
+
+
+
