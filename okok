@@ -1,648 +1,217 @@
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PostService } from '../../services/post.service';
+import { Post } from '../../services/post.model';
+import { LoginService } from '../../services/login.service';
 
-:[0;39m HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-Hibernate: alter table newso.posts modify posted_at TIMESTAMP WITH TIME ZONE
-[2m2025-04-04T22:58:58.736+05:30[0;39m [33m WARN[0;39m [35m21820[0;39m [2m--- [iss] [  restartedMain] [0;39m[36mo.h.t.s.i.ExceptionHandlerLoggedImpl    [0;39m [2m:[0;39m GenerationTarget encountered exception accepting command : Error executing DDL "alter table newso.posts modify posted_at TIMESTAMP WITH TIME ZONE" via JDBC [ORA-00054: resource busy and acquire with NOWAIT specified or timeout expired
-
-https://docs.oracle.com/error-help/db/ora-00054/]
-
-org.hibernate.tool.schema.spi.CommandAcceptanceException: Error executing DDL "alter table newso.posts modify posted_at TIMESTAMP WITH TIME ZONE" via JDBC [ORA-00054: resource busy and acquire with NOWAIT specified or timeout expired
-
-https://docs.oracle.com/error-help/db/ora-00054/]
-
-
-: resource busy and acquire with NOWAIT specified or timeout expired
-
-
-this erro is coming when i am runnin the spring boot applicatino after above changes 
-
-fix this
-
-@Autowired
-private CategoryRepository categoryRepository;
-
-@Override
-public Posts createPost(Posts post) {
-    if (post.getCategory() != null && post.getCategory().getCategoryId() != null) {
-        Category category = categoryRepository.findById(post.getCategory().getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid Category ID"));
-        post.setCategory(category);
-    }
-    return postRepository.save(post);
-}
-
-@Override
-public Posts editPost(long postid, Posts post) {
-    if (!postRepository.existsById(postid)) {
-        return null;
-    }
-
-    post.setPost_id(postid);
-    if (post.getCategory() != null && post.getCategory().getCategoryId() != null) {
-        Category category = categoryRepository.findById(post.getCategory().getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid Category ID"));
-        post.setCategory(category);
-    }
-
-    return postRepository.save(post);
-}
-
-
-
-
-
-@@@@
-
-
-
-this is my spring boot backend
-
-postController.java
-
-package com.iss.controllers;
-
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.iss.entity.Posts;
-import com.iss.services.PostService;
-
-
-@CrossOrigin(origins = "*", allowedHeaders = "*")
-@RestController
-@RequestMapping("/api/posts")
-public class PostsController {
-	
-	
-	
-	@Autowired
-	private PostService postService;
-	
-	
-	
-	@GetMapping("/all")
-	public List<Posts> showAllPosts(){
-		
-		
-		return postService.showAllPosts();
-		
-	}
-	
-	@GetMapping("/byid/{postid}")
-	public ResponseEntity<Optional<Posts>> getPostById(@PathVariable Long postid){
-		Optional<Posts> posts=postService.getByPostId(postid);
-		return ResponseEntity.ok(posts);
-	}
-	
-	
-	@PostMapping("/create")
-	public ResponseEntity<Posts> createPost(@RequestBody Posts posts){
-		
-		try {
-		Posts createdPost = postService.createPost(posts);
-		return ResponseEntity.ok(createdPost);
-		}
-		catch(Exception e) {
-			return ResponseEntity.badRequest().build();
-			
-		}
-	}
-	
-	@PutMapping("/edit/{postid}")
-	public ResponseEntity<Posts> editPost(@PathVariable long postid,@RequestBody Posts posts){
-		try {
-			posts.setPost_id(postid);
-			Posts editedPost=postService.editPost(postid, posts);
-			if(editedPost!=null)
-			{
-				return ResponseEntity.ok(editedPost);
-			}
-			else
-			{return ResponseEntity.notFound().build();
-			}
-			
-			}
-		 catch (Exception e) {
-	            return ResponseEntity.badRequest().build();
-	        }
-			
-		}
-	
-	
-	@PutMapping("/togglestatus/{postid}")
-	public Posts toggleStatus(@PathVariable long postid) {
-		return postService.toggleStatus(postid);
-		
-	}
-	
-	
-	
-	 @DeleteMapping("/delete/{postid}")
-	public ResponseEntity<Void> deletePost(@PathVariable long postid){
-		try {
-			postService.deletePost(postid);
-			return ResponseEntity.noContent().build();			
-		}
-		catch(Exception e) {
-			return ResponseEntity.notFound().build();
-		}
-		}
-	
-	
-	
-
-}
-
-
-Posts.java
-package com.iss.entity;
-
-import java.time.Instant;
-import java.time.OffsetDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
-
-@Entity
-@Table(name = "POSTS", schema = "NEWSO")
-public class Posts {
-
-	@Id
-	@Column(name = "POST_SEQ_ID", nullable = false)
-	private long post_id;
-
-	@Column(name = "POST_HEADER", nullable = false)
-	private String post_header;
-
-	@Lob
-	@Column(name = "POST_CONTENT", columnDefinition = "CLOB", nullable = false)
-	private String post_content;
-
-	@Column(name = "STATUS", nullable = false)
-	private String status;
-
-	@Column(name = "POSTED_BY", nullable = false)
-	private String posted_by;
-	
-	@Column(name = "POSTED_AT", columnDefinition="TIMESTAMP WITH TIME ZONE", nullable = false)
-	private Instant posted_at;
-	
-	
-	@PrePersist
-	protected void onCreate() {
-		if(posted_at==null) {
-			posted_at=Instant.now();
-		}
-	}
-
-	public long getPost_id() {
-		return post_id;
-	}
-
-	public void setPost_id(long post_id) {
-		this.post_id = post_id;
-	}
-
-	public String getPost_header() {
-		return post_header;
-	}
-
-	public void setPost_header(String post_header) {
-		this.post_header = post_header;
-	}
-
-	public String getPost_content() {
-		return post_content;
-	}
-
-	public void setPost_content(String post_content) {
-		this.post_content = post_content;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
-	public String getPosted_by() {
-		return posted_by;
-	}
-
-	public void setPosted_by(String posted_by) {
-		this.posted_by = posted_by;
-	}
-
-	public Instant getPosted_at() {
-		return posted_at;
-	}
-
-	public void setPosted_at(Instant posted_at) {
-		this.posted_at = posted_at;
-	}
-	
-	
-
-}
-
-
-PostRepository.java
-
-package com.iss.repo;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.iss.entity.Posts;
-
-public interface PostsRepository extends JpaRepository<Posts, Long>{
-
-}
+@Component({
+  selector: 'app-new-post',
+  standalone: false,
+  templateUrl: './new-post.component.html',
+  styleUrl: './new-post.component.css'
+})
+export class NewPostComponent implements OnInit {
  
- 
- 
- PostService.java
- 
- package com.iss.services;
+  posts: Post[] = [];
+  isEditMode = false;
+  isViewMode = false;
+  statusValue : string="ACTIVE";
 
-import java.util.List;
-import java.util.Optional;
 
-import com.iss.entity.Posts;
+  post = {
+    post_id: 0, 
+    post_header: '',
+    post_content: '',
+    status: 'ACTIVE',
+    posted_by: '',
+    posted_at: '' 
+  };
 
-public interface PostService {
-	
+  responseMessage: string = '';
 
-public Optional<Posts> getByPostId(long postid);
-	
-public List<Posts> showAllPosts();
+  constructor(
+    private postService: PostService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private loginService:LoginService
+  ) {}
 
-public Posts createPost(Posts posts);
+  ngOnInit(): void {
 
-public Posts editPost(long postid,Posts posts);
+   const storedUsername=this.loginService.getUsername();
+   if(storedUsername){
+    this.post.posted_by=storedUsername;
+   }
 
-public void deletePost(long postid);
 
-Posts toggleStatus(Long postid);
+   
+    this.route.params.subscribe(params => {
+      const postId = params['id'];
+      if (postId) {
+        this.isEditMode = true;
+      
+        const numericPostId = Number(postId);
 
-}
+        this.route.queryParams.subscribe(queryParams => {
+          if (queryParams['mode'] === 'view') {
+            this.isViewMode = true;
+            this.isEditMode = false; // Prevent editing in view mode
+          }
+        });
+        
+        // Get the post data for editing
+        this.postService.getPosts().subscribe(posts => {
+          this.posts = posts;
+          const postToEdit = this.posts.find(p => p.post_id === numericPostId);
+          if (postToEdit) {
+            // Make a type-safe copy
+            this.post = {
+              post_id: postToEdit.post_id,
+              post_header: postToEdit.post_header,
+              post_content: postToEdit.post_content,
+              status: postToEdit.status,
+              posted_by: postToEdit.posted_by,
+              posted_at: postToEdit.posted_at
+            };
+          } else {
+            this.responseMessage = 'Post not found!';
+          }
+        });
+      }
+    });
+  }
 
- 
- PostServiceImpl.java
- 
- package com.iss.services;
-
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import com.iss.entity.Posts;
-import com.iss.repo.PostsRepository;
-
-@Service
-public class PostServiceImpl implements PostService{
-	
-	@Autowired
-	private PostsRepository postRepository;
-
-	@Override
-	public List<Posts> showAllPosts() {
-		
-		return postRepository.findAll();
-	}
-
-	@Override
-	public Posts createPost(Posts posts) {
-		
-		return postRepository.save(posts);
-	}
-
-	@Override
-	public void deletePost(long postid) {
-		if(postRepository.existsById(postid)) {
-			this.postRepository.deleteById(postid);
-		}
-		else {
-            throw new IllegalArgumentException("Post with ID " + postid + " not found");
+  submitPostForm() {
+    if (this.isEditMode) {
+      // Update existing post
+      this.postService.editPost(this.post as Post).subscribe({
+        next: (response) => {
+          this.responseMessage = 'Post updated successfully!';
+        
+        },
+        error: (error) => {
+          this.responseMessage = 'Failed to update post!';
         }
-		
-	}
+      });
+    } else {
+      // Create new post
+     
+        this.postService.createPost(this.post).subscribe({
+          next: (response) => {
+            this.responseMessage = 'Post created successfully!';
+            console.log("okokzz");
+            this.post = {
+              post_id: 0, 
+              post_header: '',
+              post_content: '',
+              status: '',
+              posted_by: '',
+              posted_at: ''
+            };
+       
+          },
+          error: (error) => {
+            console.log("nonokzz");
+            this.responseMessage = 'Failed to submit data!';
+          }
+        });
+      
+    }
+  }
 
-	@Override
-	public Posts editPost(long postid, Posts posts) {
-		if(!postRepository.existsById(postid))
-		{
-		return null;
-		}
-		posts.setPost_id(postid);
-		 
-		return postRepository.save(posts);
-	}
-
-	@Override
-	public Posts toggleStatus(Long postid) {
-		Optional<Posts> postOptional = postRepository.findById(postid);
-		if(postOptional.isPresent()) {
-			Posts posts=postOptional.get();
-			posts.setStatus(posts.getStatus().equals("ACTIVE")?"INACTIVE" : "ACTIVE");
-			return postRepository.save(posts);
-			
-		}
-		return null;
-	}
-
-	@Override
-	public Optional<Posts> getByPostId(long postid) {
-		
-		return postRepository.findById(postid);
-	}
-	
-	
-	
-	
-	
-	
-
+  cancelForm() {
+    this.router.navigate(['/home']);
+  }
 }
 
-
-
-so modify change to backend code accorrdingto change i have done in database added category table
-
-and i dont have category table entity class in backend code
-
-now i want to add catery id data aslo when createing a new postController
-
-guide how to that and add using post man
-
-fix the code for creating new post and editing based on new category coloum
-
-
-
-
-
-@@@
-
-
-
-@@
-
-
-
-
-SELECT 
-    p.POST_HEADER, 
-    p.POST_CONTENT
-FROM NEWSO.POSTS p
-JOIN NEWSO.CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
-WHERE c.CATEGORY_NAME = 'Technology';  -- Change 'Technology' to the desired category
-  
-
-
-DROP TRIGGER NEWSO.POSTS_BEFORE_INSERT;
-
-
-CREATE SEQUENCE NEWSO.POST_SEQ START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
-GRANT SELECT ON NEWSO.POST_SEQ TO NEW_ROLE_CU_RW;
-
-
-CREATE OR REPLACE TRIGGER NEWSO.POSTS_BEFORE_INSERT
-BEFORE INSERT ON NEWSO.POSTS
-FOR EACH ROW 
-BEGIN
-    SELECT NEWSO.POST_SEQ.NEXTVAL INTO :NEW.POST_SEQ_ID FROM DUAL;
-END;
-/
-
-
-INSERT INTO NEWSO.POSTS (POST_HEADER, POST_CONTENT, STATUS, POSTED_BY, CATEGORY_ID) 
-VALUES ('Latest Tech Trends', 'This is about AI and ML...', 'ACTIVE', 'CHETAN', 1);
-
-
-
-Error starting at line : 148 in command -
-INSERT INTO NEWSO.POSTS (POST_SEQ_ID, POST_HEADER, POST_CONTENT, STATUS, POSTED_BY, CATEGORY_ID) 
-VALUES (9, 'Latest Tech Trends', 'This is about AI and ML...', 'ACTIVE', 'CHETAN', 1)
-Error at Command Line : 148 Column : 19
-Error report -
-SQL Error: ORA-04098: trigger 'NEWSO.POSTS_BEFORE_INSERT' is invalid and failed re-validation
-04098. 00000 -  "trigger '%s.%s' is invalid and failed re-validation"
-*Cause:    A trigger was attempted to be retrieved for execution and was
-           found to be invalid.  This also means that compilation/authorization
-           failed for the trigger.
-*Action:   Options are to resolve the compilation/authorization errors,
-           disable the trigger, or drop the trigger.
-
-
-fix this error
-
-
--- Step 1: Create CATEGORY Table
-CREATE TABLE NEWSO.CATEGORY (
-    CATEGORY_ID NUMBER PRIMARY KEY,
-    CATEGORY_NAME VARCHAR2(255) NOT NULL UNIQUE
-) TABLESPACE NEW_DATA;
-
--- Step 2: Grant permissions for CATEGORY table
-GRANT SELECT, INSERT, UPDATE, DELETE ON NEWSO.CATEGORY TO NEW_ROLE_CU_RW;
-
--- Step 3: Add CATEGORY_ID column to POSTS table
-ALTER TABLE NEWSO.POSTS ADD CATEGORY_ID NUMBER;
-
--- Step 4: Add Foreign Key Constraint
-ALTER TABLE NEWSO.POSTS 
-ADD CONSTRAINT FK_CATEGORY FOREIGN KEY (CATEGORY_ID) 
-REFERENCES NEWSO.CATEGORY(CATEGORY_ID) ON DELETE CASCADE;
-
--- Step 5: Modify Insert statement for POSTS
-INSERT INTO NEWSO.CATEGORY (CATEGORY_ID, CATEGORY_NAME) VALUES (1, 'Technology');
-INSERT INTO NEWSO.CATEGORY (CATEGORY_ID, CATEGORY_NAME) VALUES (2, 'Business');
-INSERT INTO NEWSO.CATEGORY (CATEGORY_ID, CATEGORY_NAME) VALUES (3, 'Education');
-
--- Step 6: Insert Posts with CATEGORY_ID
-INSERT INTO NEWSO.POSTS (POST_SEQ_ID, POST_HEADER, POST_CONTENT, STATUS, POSTED_BY, CATEGORY_ID) 
-VALUES (9, 'Latest Tech Trends', 'This is about AI and ML...', 'ACTIVE', 'CHETAN', 1);
-
--- Step 7: Update existing data with a default category (optional)
-UPDATE NEWSO.POSTS SET CATEGORY_ID = 1 WHERE CATEGORY_ID IS NULL;
-
--- Commit changes
-COMMIT;
-
-
-
-
-###
-
-
-
--- Create a new tablespace for the new project
-
-CREATE TABLESPACE NEW_DATA
-  DATAFILE 'C:/Chetan/Development/DB/NEW_DATA.dbf'
-  SIZE 100M AUTOEXTEND ON; 
-  
-  
-alter session set "_ORACLE_SCRIPT"=true;
-
--- Part 1: Create User to serve as the 'Schema Owner' of all the objectsjust t
-CREATE USER NEWSO IDENTIFIED BY "NEWSO_pwd"
-  DEFAULT TABLESPACE users
-  TEMPORARY TABLESPACE temp
-  QUOTA UNLIMITED ON users;
-
-
--- Part 2: Create Application Connect User with Read-write access to the schema
-    CREATE USER NEWCU IDENTIFIED BY "NEWCU_pwd"
-  DEFAULT TABLESPACE users
-  TEMPORARY TABLESPACE temp;
-  
-ALTER USER NEWSO quota unlimited on NEW_DATA;
-
-
--- ROLES
-
--- Part 1: Create application role with write access
-CREATE ROLE NEW_ROLE_CU_RW NOT IDENTIFIED;
-GRANT CREATE SESSION TO NEW_ROLE_CU_RW;
-GRANT CONNECT TO NEW_ROLE_CU_RW;
-
--- Assign ROLES
-GRANT NEW_ROLE_CU_RW TO NEWCU;
-
-
--- GRANT SELECT on sequence (if you're using sequences to generate primary keys)
-CREATE SEQUENCE NEWSO.USERR_SEQ START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
-GRANT SELECT ON NEWSO.USERR_SEQ TO NEW_ROLE_CU_RW;
-
-CREATE TABLE NEWSO.USERR
-(
-
-NAME 	VARCHAR2(255)NOT NULL,
-EMAIL 		VARCHAR2(255)NOT NULL,
-PASSWORD 		VARCHAR2(255)NOT NULL,
-PHONENO		VARCHAR2(255)NOT NULL
-
-)TABLESPACE NEW_DATA;
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON NEWSO.USERR TO NEW_ROLE_CU_RW;
-
--- NOTE: Hibernate will handle the table creation based on your JPA entities
--- You do not need to manually create the APP_USER table here, Hibernate will automatically generate it based on the code.
--- Just make sure the entity
-
-Alter table NEWSO.USERR Add id NUMBER NOT NULL;
-
-Alter table NEWSO.USERR Add constraint user_pk PRIMARY KEY (id);
-
-select * from NEWSO.USERR;
-
-
-select USERR from NEWSO where  upper(USERR) ='USERR';
-
-select sys_context('userenv','current_schema') From dual;
-
-select constraint_name from user_constraints where table_name = 'NEWSO.USERR' and constraint_type='P';
-
-alter table NEWSO.USERR drop primary key;
-
-
-CREATE TABLE NEWSO.EMPLOYEE
-(
-EMP_ID VARCHAR2(50) PRIMARY KEY,
-E_NAME 	VARCHAR2(255)NOT NULL,
-SALARY NUMBER(10,2) NOT NULL,
-DEPARTMENT VARCHAR(255) NOT NULL,
-STATUS VARCHAR2(20) NOT NULL,
-PHONENO	VARCHAR2(20) NOT NULL
-
-)TABLESPACE NEW_DATA;
-
-
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON NEWSO.EMPLOYEE TO NEW_ROLE_CU_RW;
-
-INSERT INTO NEWSO.EMPLOYEE (EMP_ID,E_NAME,SALARY,DEPARTMENT,STATUS,PHONENO) VALUES('E001','CHETAN',500000,'IT','ACTIVE','912342134');
-INSERT INTO NEWSO.EMPLOYEE (EMP_ID,E_NAME,SALARY,DEPARTMENT,STATUS,PHONENO) VALUES('E002','SHARON',400000,'IT','ACTIVE','9123421354');
-
-SELECT * FROM NEWSO.EMPLOYEE;
-
-desc newso.employee;
-
-alter table newso.employee modify EMP_ID VARCHAR2(255 Char);
-alter table newso.employee modify phoneno varchar2(255 char);
-
-alter table newso.employee modify status varchar2(255 char);
-alter table newso.employee modify salary float(53); 
-commit;
-
--- post table
-
-
-CREATE TABLE NEWSO.POSTS
-(
-POST_SEQ_ID NUMBER PRIMARY KEY,
-POST_HEADER VARCHAR2(4000)NOT NULL,
-POST_CONTENT CLOB,
-STATUS VARCHAR2(220) NOT NULL,
-POSTED_BY VARCHAR2(220) NOT NULL,
-POSTED_AT TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP
-
-)TABLESPACE NEW_DATA;
-
-
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON NEWSO.POSTS TO NEW_ROLE_CU_RW;
-
-
-ALTER USER NEWSO ACCOUNT UNLOCK;
-GRANT CREATE SESSION TO NEWSO;
-
-GRANT CONNECT,RESOURCE TO NEWSO;
-SELECT * FROM ALL_SEQUENCES WHERE SEQUENCE_NAME = 'POST_SEQ' AND SEQUENCE_OWNER = 'NEWSO';
-DROP TRIGGER NEWSO.POSTS_BEFORE_INSERT;
-
-INSERT INTO NEWSO.POSTS(POST_SEQ_ID,POST_HEADER,POST_CONTENT,STATUS,POSTED_BY) VALUES(8,'ADDED CONTACT US PAGdE','THIS IS LITTLE ON CONTdNTNEN AJSLD ALSDJ LAJSKLD JLASJD LAJSDLK JASL; JKLASJ L;ASJD LJASLK JAS JL;ASJ L;SJA JAS  ASJDL;J  ASD','ACTIVE','CHETANd');
-commit;
-
-CREATE SEQUENCE NEWSO.POST_SEQ START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
-GRANT SELECT ON NEWSO.POST_SEQ TO NEW_ROLE_CU_RW;
-
-
-CREATE OR REPLACE TRIGGER NEWSO.POSTS_BEFORE_INSERT
-BEFORE INSERT ON NEWSO.POSTS
-FOR EACH ROW 
-BEGIN
-    SELECT NEWSO.POST_SEQ.NEXTVAL INTO :NEW.POST_SEQ_ID FROM DUAL;
-END;
-
-
-
-
-
-
-
-
-this is my sql oracle script so i want to add a catergory table in this and link with post table so i idea is that the post heading caterey should be saved in caterey table so link according 
+and html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Submission Form</title>
+    <style>
+    
+
+    </style>
+</head>
+<body>
+
+    <div class="container" [ngClass]="{'edit-mode': isEditMode}">
+        <form>
+            <div class="editid" *ngIf="isEditMode" hidden>
+                <label for="postId">Post ID</label>
+                <input type="text" id="postId" name="postId" [(ngModel)]="post.post_id" readonly>
+            </div>
+
+            <div class="editstatus" *ngIf="isEditMode">
+                <label for="status">Status</label>
+                <select id="status" name="status" [(ngModel)]="post.status">
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                </select>
+            </div>
+
+            <div class="form-group" hidden>
+                <label for="postedBy">Posted By</label>
+                <input type="text" id="postedBy" name="postedBy" [(ngModel)]="post.posted_by" readonly>
+            </div>
+            
+          
+            
+            <div class="form-group" *ngIf="!isEditMode">
+                <label for="postHeader">Post Heading</label>
+                <input type="text" id="postHeader" name="postHeader" [(ngModel)]="post.post_header" [readonly]="isViewMode" placeholder="Enter New Post Heading Here" required>
+            </div>
+
+            <div class="editheader" *ngIf="isEditMode">
+                <label for="postHeader">Post Heading</label>
+                <input type="text" id="postHeader" name="postHeader" [(ngModel)]="post.post_header" [readonly]="isViewMode"  required>
+            </div>
+
+
+           
+           
+
+            <div class="contentbox" *ngIf="!isEditMode">
+                <label for="postContent">Post Content</label>
+                <textarea id="postContent" name="postContent" [(ngModel)]="post.post_content" [readonly]="isViewMode" placeholder="Enter New Post Content Here" required></textarea>
+            </div>
+
+            <div class="editcontentbox" *ngIf="isEditMode">
+                <label for="postContent">Post Content</label>
+                <textarea class="edittextarea" id="postContent" name="postContent" [(ngModel)]="post.post_content" [readonly]="isViewMode" required></textarea>
+            </div>
+
+           
+
+           
+
+            <div class="button-group" *ngIf="!isEditMode && !isViewMode">
+                <button type="submit" (click)="submitPostForm()" routerLink="">{{ isEditMode ? 'Update' : 'Submit' }}</button>
+                <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
+            </div>
+
+            <div class="editpostbuttons" *ngIf="isEditMode">
+                <button type="submit" (click)="submitPostForm()" routerLink="">{{ isEditMode ? 'Update' : 'Submit' }}</button>
+                <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
+            </div>
+
+        </form>
+
+        <div class="illustration">
+            <img src=""*ngIf="!isEditMode">
+        </div>
+
+
+        
+    </div>
+
+    <p *ngIf="responseMessage">{{ responseMessage }}</p>
+
+</body>
+</html>
+
+so add that catergoy feature in this my code
