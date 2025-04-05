@@ -1,106 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post Submission Form</title>
-    <style>
-    
-
-    </style>
-</head>
-<body>
-
-    <div class="container" [ngClass]="{'edit-mode': isEditMode}">
-        <form>
-            <div class="editid" *ngIf="isEditMode" hidden>
-                <label for="postId">Post ID</label>
-                <input type="text" id="postId" name="postId" [(ngModel)]="post.post_id" readonly>
-            </div>
-
-            <div class="editstatus" *ngIf="isEditMode">
-                <label for="status">Status</label>
-                <select id="status" name="status" [(ngModel)]="post.status">
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="INACTIVE">INACTIVE</option>
-                </select>
-            </div>
-
-            <div class="form-group" hidden>
-                <label for="postedBy">Posted By</label>
-                <input type="text" id="postedBy" name="postedBy" [(ngModel)]="post.posted_by" readonly>
-            </div>
-            
-          
-            
-            <div class="form-group" *ngIf="!isEditMode">
-                <label for="postHeader">Post Heading</label>
-                <input type="text" id="postHeader" name="postHeader" [(ngModel)]="post.post_header" [readonly]="isViewMode" placeholder="Enter New Post Heading Here" required>
-            </div>
-
-            <div class="editheader" *ngIf="isEditMode">
-                <label for="postHeader">Post Heading</label>
-                <input type="text" id="postHeader" name="postHeader" [(ngModel)]="post.post_header" [readonly]="isViewMode"  required>
-            </div>
-
-
-           
-           
-
-            <div class="contentbox" *ngIf="!isEditMode">
-                <label for="postContent">Post Content</label>
-                <textarea id="postContent" name="postContent" [(ngModel)]="post.post_content" [readonly]="isViewMode" placeholder="Enter New Post Content Here" required></textarea>
-            </div>
-
-            <div class="editcontentbox" *ngIf="isEditMode">
-                <label for="postContent">Post Content</label>
-                <textarea class="edittextarea" id="postContent" name="postContent" [(ngModel)]="post.post_content" [readonly]="isViewMode" required></textarea>
-            </div>
-
-           <!-- Category Dropdown -->
-           <div class="cat">
-            <label for="category">Category</label>
-            <select id="category" name="categoryId" [(ngModel)]="post.categoryId" required>
-              <option *ngFor="let category of categories" [value]="category.id">
-                {{ category.name }}
-              </option>
-            </select>
-          </div>
-           
-
-            <div class="button-group" *ngIf="!isEditMode && !isViewMode">
-                <button type="submit" (click)="submitPostForm()" routerLink="">{{ isEditMode ? 'Update' : 'Submit' }}</button>
-                <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
-            </div>
-
-            <div class="editpostbuttons" *ngIf="isEditMode">
-                <button type="submit" (click)="submitPostForm()" routerLink="">{{ isEditMode ? 'Update' : 'Submit' }}</button>
-                <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
-            </div>
-
-        </form>
-
-        <div class="illustration">
-            <img src=""*ngIf="!isEditMode">
-        </div>
-
-
-        
+<div class="container" [ngClass]="{'edit-mode': isEditMode}">
+  <form>
+    <div class="editid" *ngIf="isEditMode" hidden>
+      <label for="postId">Post ID</label>
+      <input type="text" id="postId" name="postId" [(ngModel)]="post.post_id" readonly>
     </div>
 
-    <p *ngIf="responseMessage">{{ responseMessage }}</p>
+    <div class="editstatus" *ngIf="isEditMode">
+      <label for="status">Status</label>
+      <select id="status" name="status" [(ngModel)]="post.status">
+        <option value="ACTIVE">ACTIVE</option>
+        <option value="INACTIVE">INACTIVE</option>
+      </select>
+    </div>
 
-</body>
-</html>
+    <div class="form-group" hidden>
+      <label for="postedBy">Posted By</label>
+      <input type="text" id="postedBy" name="postedBy" [(ngModel)]="post.posted_by" readonly>
+    </div>
 
-this is my html code here it is showing erro in thi linie
+    <div class="form-group" *ngIf="!isEditMode">
+      <label for="postHeader">Post Heading</label>
+      <input type="text" id="postHeader" name="postHeader" [(ngModel)]="post.post_header" [readonly]="isViewMode" placeholder="Enter New Post Heading Here" required>
+    </div>
 
-    <select id="category" name="categoryId" [(ngModel)]="post.categoryId" required>
+    <div class="editheader" *ngIf="isEditMode">
+      <label for="postHeader">Post Heading</label>
+      <input type="text" id="postHeader" name="postHeader" [(ngModel)]="post.post_header" [readonly]="isViewMode" required>
+    </div>
 
-Property 'categoryId' does not exist on type 'Post'. Did you mean 'category'?ngtsc(2551)
-new-post.component.ts(16, 42): Error occurs in the template of component NewPostComponent.
-Property 'categoryId' does not exist on type 'Post'. Did you mean 'category'?ngtsc(2551)
-new-post.component.ts(16, 42): Error occurs in the template of component NewPostComponent.
+    <div class="contentbox" *ngIf="!isEditMode">
+      <label for="postContent">Post Content</label>
+      <textarea id="postContent" name="postContent" [(ngModel)]="post.post_content" [readonly]="isViewMode" placeholder="Enter New Post Content Here" required></textarea>
+    </div>
 
-fix this and give full code again
+    <div class="editcontentbox" *ngIf="isEditMode">
+      <label for="postContent">Post Content</label>
+      <textarea class="edittextarea" id="postContent" name="postContent" [(ngModel)]="post.post_content" [readonly]="isViewMode" required></textarea>
+    </div>
 
+    <!-- Fixed Category Dropdown -->
+    <div class="cat">
+      <label for="category">Category</label>
+      <select id="category" name="category" [(ngModel)]="post.category.categoryId" required>
+        <option *ngFor="let category of categories" [value]="category.categoryId">
+          {{ category.categoryName }}
+        </option>
+      </select>
+    </div>
+
+    <div class="button-group" *ngIf="!isEditMode && !isViewMode">
+      <button type="submit" (click)="submitPostForm()">{{ isEditMode ? 'Update' : 'Submit' }}</button>
+      <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
+    </div>
+
+    <div class="editpostbuttons" *ngIf="isEditMode">
+      <button type="submit" (click)="submitPostForm()">{{ isEditMode ? 'Update' : 'Submit' }}</button>
+      <button type="button" routerLink="/home" class="cancel-btn">Cancel</button>
+    </div>
+  </form>
+
+  <div class="illustration">
+    <img src="" *ngIf="!isEditMode">
+  </div>
+</div>
+
+<p *ngIf="responseMessage">{{ responseMessage }}</p>
