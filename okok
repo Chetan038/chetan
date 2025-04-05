@@ -11,23 +11,22 @@ import { LoginService } from '../../services/login.service';
   styleUrl: './new-post.component.css'
 })
 export class NewPostComponent implements OnInit {
- 
+
   posts: Post[] = [];
   isEditMode = false;
   isViewMode = false;
-  statusValue : string="ACTIVE";
+  statusValue: string = "ACTIVE";
 
   categories: any[] = [];
 
-
   post = {
-    post_id: 0, 
+    post_id: 0,
     post_header: '',
     post_content: '',
     status: 'ACTIVE',
     posted_by: '',
     posted_at: '',
-    categoryId:0
+    categoryId: 0
   };
 
   responseMessage: string = '';
@@ -36,42 +35,39 @@ export class NewPostComponent implements OnInit {
     private postService: PostService,
     private route: ActivatedRoute,
     private router: Router,
-    private loginService:LoginService
+    private loginService: LoginService
   ) {}
 
   ngOnInit(): void {
+    const storedUsername = this.loginService.getUsername();
+    if (storedUsername) {
+      this.post.posted_by = storedUsername;
+    }
 
-   const storedUsername=this.loginService.getUsername();
-   if(storedUsername){
-    this.post.posted_by=storedUsername;
-   }
-   
-
-    this.postService.getCategories().subscribe(data=>{
-      this.categories=data;
+    // Load categories
+    this.postService.getCategories().subscribe(data => {
+      this.categories = data;
     });
 
-   
+    // Check for edit/view mode
     this.route.params.subscribe(params => {
       const postId = params['id'];
       if (postId) {
         this.isEditMode = true;
-      
         const numericPostId = Number(postId);
 
         this.route.queryParams.subscribe(queryParams => {
           if (queryParams['mode'] === 'view') {
             this.isViewMode = true;
-            this.isEditMode = false; // Prevent editing in view mode
+            this.isEditMode = false;
           }
         });
-        
-        // Get the post data for editing
+
+        // Fetch post details for editing
         this.postService.getPosts().subscribe(posts => {
           this.posts = posts;
           const postToEdit = this.posts.find(p => p.post_id === numericPostId);
           if (postToEdit) {
-            // Make a type-safe copy
             this.post = {
               post_id: postToEdit.post_id,
               post_header: postToEdit.post_header,
@@ -79,7 +75,7 @@ export class NewPostComponent implements OnInit {
               status: postToEdit.status,
               posted_by: postToEdit.posted_by,
               posted_at: postToEdit.posted_at,
-              categoryId: postToEdit.categoryId||0
+              categoryId: postToEdit.category?.categoryId || 0
             };
           } else {
             this.responseMessage = 'Post not found!';
@@ -90,41 +86,42 @@ export class NewPostComponent implements OnInit {
   }
 
   submitPostForm() {
+    // Prepare payload with category object (required by backend)
+    const postPayload = {
+      ...this.post,
+      category: {
+        categoryId: this.post.categoryId
+      }
+    };
+    delete postPayload.categoryId;
+
     if (this.isEditMode) {
-      // Update existing post
-      this.postService.editPost(this.post as Post).subscribe({
+      this.postService.editPost(postPayload as Post).subscribe({
         next: (response) => {
           this.responseMessage = 'Post updated successfully!';
-        
         },
         error: (error) => {
           this.responseMessage = 'Failed to update post!';
         }
       });
     } else {
-      // Create new post
-     
-        this.postService.createPost(this.post).subscribe({
-          next: (response) => {
-            this.responseMessage = 'Post created successfully!';
-            console.log("okokzz");
-            this.post = {
-              post_id: 0, 
-              post_header: '',
-              post_content: '',
-              status: '',
-              posted_by: '',
-              posted_at: '',
-              categoryId: 0
-            };
-       
-          },
-          error: (error) => {
-            console.log("nonokzz");
-            this.responseMessage = 'Failed to submit data!';
-          }
-        });
-      
+      this.postService.createPost(postPayload).subscribe({
+        next: (response) => {
+          this.responseMessage = 'Post created successfully!';
+          this.post = {
+            post_id: 0,
+            post_header: '',
+            post_content: '',
+            status: 'ACTIVE',
+            posted_by: '',
+            posted_at: '',
+            categoryId: 0
+          };
+        },
+        error: (error) => {
+          this.responseMessage = 'Failed to submit data!';
+        }
+      });
     }
   }
 
