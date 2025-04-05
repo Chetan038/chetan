@@ -1,3 +1,79 @@
+/* [✅ New] Category title */
+.category-title {
+  font-size: 24px;
+  margin: 30px 15px 10px;
+  color: #2e3eec;
+}
+
+/* [✅ New] Search bar styling */
+.search-bar {
+  width: 250px;
+  margin: 0 15px 20px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+
+,,,
+
+
+<div class="category-container" *ngFor="let categoryName of getCategoryNames()">
+
+  <!-- [✅ New] Category Heading -->
+  <h2 class="category-title">{{ categoryName }}</h2>
+
+  <!-- [✅ New] Search Bar for Each Category -->
+  <input
+    type="text"
+    class="search-bar"
+    placeholder="Search post header..."
+    [value]="searchTerms[categoryName]"
+    (input)="updateSearch(categoryName, $event)"
+  />
+
+  <div class="post-row">
+    <!-- [✅ New] Filtered posts shown for that category -->
+    <ng-container *ngFor="let post of filterPosts(groupedPosts[categoryName], searchTerms[categoryName])">
+      <div class="post-card">
+        <div class="post-header">
+          <h3>{{ post.post_header }}</h3>
+        </div>
+
+        <div class="post-info">
+          <p class="posted-by" *ngIf="loggedIn"><strong>Post ID:</strong> {{ post.post_id }}</p>
+          <p class="posted-by"><strong>Posted by:</strong> {{ post.posted_by }}</p>
+          <p class="post-time"><strong>Posted at:</strong> {{ post.posted_at | date: 'MMM d, y h:mm a' }}</p>
+        </div>
+
+        <div class="post-content">
+          <p>{{ post.post_content }}</p>
+        </div>
+
+        <div class="post-buttons">
+          <button class="btn-1" (click)="togglestatus(post)" *ngIf="loggedIn">
+            {{ post.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+          </button>
+          <button class="btn-1" (click)="editPost(post.post_id)" *ngIf="loggedIn">Edit</button>
+          <button class="btn-1" (click)="viewPost(post.post_id)">View</button>
+          <button class="btn-2" (click)="deletePost(post.post_id)" *ngIf="loggedIn">Delete</button>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- [✅ New] Show when no posts match the search -->
+  <p *ngIf="filterPosts(groupedPosts[categoryName], searchTerms[categoryName]).length === 0" style="color: gray; padding-left: 10px;">
+    No matching posts found.
+  </p>
+
+</div>
+
+
+
+
+
 <div class="post-container">
   <div class="post-row">
     <ng-container *ngFor="let post of posts">
