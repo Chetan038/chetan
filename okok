@@ -19,16 +19,16 @@ export class NewPostComponent implements OnInit {
 
   categories: any[] = [];
 
-  post = {
+  post: Post = {
     post_id: 0,
     post_header: '',
     post_content: '',
     status: 'ACTIVE',
     posted_by: '',
     posted_at: '',
-    category:{
-      categoryId:0,
-      categoryName:''
+    category: {
+      categoryId: 0,
+      categoryName: ''
     }
   };
 
@@ -76,8 +76,7 @@ export class NewPostComponent implements OnInit {
               status: postToEdit.status,
               posted_by: postToEdit.posted_by,
               posted_at: postToEdit.posted_at,
-              category:postToEdit.category||{categoryId:0,categoryName:''}
-             
+              category: postToEdit.category || { categoryId: 0, categoryName: '' }
             };
           } else {
             this.responseMessage = 'Post not found!';
@@ -88,18 +87,8 @@ export class NewPostComponent implements OnInit {
   }
 
   submitPostForm() {
-    const { categoryId, ...rest } = this.post;
-
-    const postPayload = {
-      ...rest,
-      category: {
-        categoryId: categoryId,
-        categoryName:categoryName
-      }
-    };
-
     if (this.isEditMode) {
-      this.postService.editPost(postPayload).subscribe({
+      this.postService.editPost(this.post).subscribe({
         next: (response) => {
           this.responseMessage = 'Post updated successfully!';
         },
@@ -108,7 +97,7 @@ export class NewPostComponent implements OnInit {
         }
       });
     } else {
-      this.postService.createPost(postPayload).subscribe({
+      this.postService.createPost(this.post).subscribe({
         next: (response) => {
           this.responseMessage = 'Post created successfully!';
           this.post = {
@@ -116,9 +105,12 @@ export class NewPostComponent implements OnInit {
             post_header: '',
             post_content: '',
             status: 'ACTIVE',
-            posted_by: '',
+            posted_by: this.loginService.getUsername() || '',
             posted_at: '',
-            categoryId: 0
+            category: {
+              categoryId: 0,
+              categoryName: ''
+            }
           };
         },
         error: (error) => {
