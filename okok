@@ -1,464 +1,196 @@
-post.model.ts
-export interface Category{
-    categoryId: number;
-    categoryName:string;
-}
-export interface Post{
-    post_id : number;
-    post_header : string;
-    post_content : string;
-    status: string;
-    posted_by:string;
-    posted_at: string; 
-    category: Category;
-    
-
-}
-
-app module.ts
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-import { LoginComponent } from './components/login/login.component';
-import { NavbarComponent } from './components/navbar/navbar.component';
-import { HOMEComponent } from './components/home/home.component';
-import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { FormsModule } from '@angular/forms';
-import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
-import { JwtInterceptor } from './interceptors/jwt-interceptor.service';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { EmployeeModalComponent } from './components/employee-modal/employee-modal.component';
-import { LandingPageComponent } from './components/landing-page/landing-page.component';
-import { NewPostComponent } from './components/new-post/new-post.component';
-import { EditPostModalComponent } from './components/edit-post-modal/edit-post-modal.component';
-import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
-import { AdminCreateEditComponent } from './components/admin-create-edit/admin-create-edit.component';
-import { AddEditAdminComponent } from './add-edit-admin/add-edit-admin.component';
-import { ViewpostComponent } from './components/viewpost/viewpost.component';
-
-
-
-
-
-@NgModule({
-  declarations: [
-    AppComponent,
-    LoginComponent,
-    NavbarComponent,
-    HOMEComponent,
-    DashboardComponent,
-    EmployeeModalComponent,
-    LandingPageComponent,
-    NewPostComponent,
-    EditPostModalComponent,
-    AdminDashboardComponent,
-    AdminCreateEditComponent,
-    AddEditAdminComponent,
-    ViewpostComponent
-    
-    
-  ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    FormsModule,
-    HttpClientModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatInputModule,
-    MatFormFieldModule
-  ],
-  providers: [{provide:HTTP_INTERCEPTORS,useClass:JwtInterceptor,multi:true}],
-  bootstrap: [AppComponent]
-})
-export class AppModule { }
-
-post.service.ts
-
-import { HttpClient } from '@angular/common/http';
-      import { Injectable } from '@angular/core';
-      import { Observable } from 'rxjs';
-      import {Post} from './post.model';
-
-      @Injectable({
-        providedIn: 'root'
-      })
-      export class PostService {
-
-        private apiUrlt='http://localhost:8080/api/posts/all';
-        private posturl='http://localhost:8080/api/posts/create';
-        private deleteurl='http://localhost:8080/api/posts/delete';
-        private editurl='http://localhost:8080/api/posts/edit';
-        private toggleurl='http://localhost:8080/api/posts/togglestatus';
-
-        constructor(private http:HttpClient) { }
-
-        getPosts(): Observable<Post[]>{
-          return this.http.get<Post[]>(this.apiUrlt);
-        }
-
-        togglestatus(post_id:number):Observable<any>{
-          return this.http.put(`${this.toggleurl}/${post_id}`,{});
-        }
-
-        createPost(data:any):Observable<any>{
-          return this.http.post(this.posturl,data);
-        }
-
-        editPost(post:Post):Observable<Post>{
-          return this.http.put<Post>(`${this.editurl}/${post.post_id}`,post);
-        }
-
-        deletePost(postid: number ):Observable<any>{
-          return this.http.delete(`${this.deleteurl}/${postid}`)
-        }
-
-        getPostById(postId: number): Observable<Post> {
-          return this.http.get<Post>(`http://localhost:8080/api/posts/byid/${postId}`);
-        }
-        
-        getCategories(){
-          return this.http.get<any[]>('http://localhost:8080/category/all');
-        }
-
-
-      }
-
-
-home.component.ts
-
-import { Component, OnInit } from '@angular/core';
-import { LoginService } from '../../services/login.service';
-import {Post} from '../../services/post.model'
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatSort } from '@angular/material/sort';
 import { PostService } from '../../services/post.service';
+import { Post } from '../../services/post.model';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { EditPostModalComponent } from '../edit-post-modal/edit-post-modal.component';
-
+import { LoginService } from '../../services/login.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
-  selector: 'app-home',
-  standalone: false,
-  templateUrl: './home.component.html',
-  styleUrl: './home.component.css'
+  selector: 'app-post-table',
+  templateUrl: './post-table.component.html',
+  styleUrls: ['./post-table.component.css']
 })
-export class HOMEComponent implements OnInit{
+export class PostTableComponent implements OnInit {
+  displayedColumns: string[] = ['post_header', 'status', 'posted_by', 'posted_at', 'category', 'actions'];
+  dataSource = new MatTableDataSource<Post>();
+  categories: string[] = [];
+  selectedCategory = '';
+  searchKey = '';
+  loggedIn = false;
 
-    posts: Post[]=[];
-    groupedPosts:{[key:string]:Post[]}={};
-    searchTerms:{[key:string]:string}={};
-    public loggedIn=false;
-  
-    constructor(private readonly loginService:LoginService, private postService:PostService,private dialog:MatDialog,private router:Router){}
-    ngOnInit(): void {
-      this.loggedIn=this.loginService.isLoggedIn();
+  @ViewChild(MatSort) sort!: MatSort;
+
+  constructor(
+    private postService: PostService,
+    private loginService: LoginService,
+    private router: Router,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
+  ) {}
+
+  ngOnInit(): void {
+    this.loggedIn = this.loginService.isLoggedIn();
+    this.loadPosts();
+  }
+
+  loadPosts() {
+    this.postService.getPosts().subscribe(posts => {
+      this.dataSource.data = posts;
+      this.dataSource.sort = this.sort;
+
+      this.categories = Array.from(new Set(posts.map(p => p.category?.categoryName || 'Uncategorized')));
+    });
+  }
+
+  applyFilter() {
+    this.dataSource.filter = this.searchKey.trim().toLowerCase();
+  }
+
+  filterByCategory() {
+    if (!this.selectedCategory) {
       this.loadPosts();
-
+    } else {
+      this.dataSource.data = this.dataSource.data.filter(post => post.category?.categoryName === this.selectedCategory);
     }
+  }
 
-    loadPosts(){
-      this.postService.getPosts().subscribe(
-        (data: Post[])=>{
-          console.log('posts',data);
-          this.posts=data;
-          this.groupPostsByCategory();
-        },
-      (error)=>{console.error('erro',error);}
-      );
-      
-    }
+  clearSearch() {
+    this.searchKey = '';
+    this.applyFilter();
+  }
 
-    deletePost(postid:number){
-      if(confirm('are you sure?'))
-      {
-        this.postService.deletePost(postid).subscribe(()=>{
-          this.posts=this.posts.filter(pst => pst.post_id!==postid);
-          this.groupPostsByCategory();
-        });
-      }
-    }
+  editPost(id: number) {
+    this.router.navigate(['/new-post', id]);
+  }
 
-
-    togglestatus(post:Post):void{
-      this.postService.togglestatus(post.post_id).subscribe((updatedPost)=>
-      {
-        post.status=updatedPost.status;
+  deletePost(id: number) {
+    const confirmed = confirm('Are you sure you want to delete this post?');
+    if (confirmed) {
+      this.postService.deletePost(id).subscribe(() => {
+        this.snackBar.open('Post deleted!', '', { duration: 2000 });
+        this.loadPosts();
       });
     }
+  }
 
-    editPost(postId:number){
-      this.router.navigate(['/new-post',postId]);
-    }
-
-    viewPost(postId:number){
-      this.router.navigate(['/viewpost',postId],{queryParams:{mode:'view'}});
-    }
-
-    groupPostsByCategory(){
-      this.groupedPosts={};
-      this.searchTerms={};
-      this.posts.forEach(post=>{
-        if(post.status==='ACTIVE'||this.loggedIn){
-          const category=post.category?.categoryName||'Uncategorized';
-          if(!this.groupedPosts[category]){
-            this.groupedPosts[category]=[];
-            this.searchTerms[category]='';
-          }
-          this.groupedPosts[category].push(post);
-        }
+  toggleStatus(post: Post) {
+    const confirmed = confirm(`Are you sure you want to ${post.status === 'ACTIVE' ? 'deactivate' : 'activate'} this post?`);
+    if (confirmed) {
+      this.postService.togglestatus(post.post_id).subscribe((updated) => {
+        post.status = updated.status;
+        this.snackBar.open(`Post ${updated.status.toLowerCase()}d!`, '', { duration: 2000 });
+        this.loadPosts();
       });
     }
+  }
 
-    getCategoryNames():string[]{
-      return Object.keys(this.groupedPosts);
-    }
-
-    filterPosts(posts: Post[], searchTerm: string): Post[] {
-      if (!searchTerm.trim()) return posts;
-      return posts.filter(post =>
-        post.post_header.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-  
-    updateSearch(category: string, event: any) {
-      this.searchTerms[category] = event.target.value;
-    }
-  
-  
+  viewPost(postId: number) {
+    this.router.navigate(['/viewpost', postId], { queryParams: { mode: 'view' } });
+  }
 }
 
 
-home.component.html
 
-<html>
-  <body>
-<div class="category-container" *ngFor="let categoryName of getCategoryNames()">
+###
 
-  <!-- [✅ New] Category Heading -->
-  <h2 class="category-title">{{ categoryName }}</h2>
 
-  <!-- [✅ New] Search Bar for Each Category -->
-  <input
-    type="text"
-    class="search-bar"
-    placeholder="Search post header..."
-    [value]="searchTerms[categoryName]"
-    (input)="updateSearch(categoryName, $event)"
-  />
+.full-width {
+  width: 100%;
+}
 
-  <div class="post-row">
-    <!-- [✅ New] Filtered posts shown for that category -->
-    <ng-container *ngFor="let post of filterPosts(groupedPosts[categoryName], searchTerms[categoryName])">
-      <div class="post-card">
-        <div class="post-header">
-          <h3>{{ post.post_header }}</h3>
-        </div>
+.filter-controls {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
 
-        <div class="post-info">
-          <p class="posted-by" *ngIf="loggedIn"><strong>Post ID:</strong> {{ post.post_id }}</p>
-          <p class="posted-by"><strong>Posted by:</strong> {{ post.posted_by }}</p>
-          <p class="post-time"><strong>Posted at:</strong> {{ post.posted_at | date: 'MMM d, y h:mm a' }}</p>
-        </div>
+.active {
+  color: green;
+  font-weight: bold;
+}
 
-        <div class="post-content">
-          <p>{{ post.post_content }}</p>
-        </div>
+.inactive {
+  color: red;
+  font-weight: bold;
+}
 
-        <div class="post-buttons">
-          <button class="btn-1" (click)="togglestatus(post)" *ngIf="loggedIn">
-            {{ post.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
-          </button>
-          <button class="btn-1" (click)="editPost(post.post_id)" *ngIf="loggedIn">Edit</button>
-          <button class="btn-1" (click)="viewPost(post.post_id)"*ngIf="loggedIn">View</button>
-          <button class="btn-1-1" (click)="viewPost(post.post_id)" *ngIf="!loggedIn">View</button>
-          <button class="btn-2" (click)="deletePost(post.post_id)" *ngIf="loggedIn">Delete</button>
-        </div>
-      </div>
-    </ng-container>
-  </div>
+table {
+  width: 100%;
+}
 
-  <!--  Show when no posts match the search -->
-  <p *ngIf="filterPosts(groupedPosts[categoryName], searchTerms[categoryName]).length === 0" style="color: gray; padding-left: 10px;">
-    No matching posts found.
-  </p>
 
+##
+
+<div class="filter-controls">
+  <mat-form-field appearance="outline">
+    <mat-label>Search Posts</mat-label>
+    <input matInput (keyup)="applyFilter()" [(ngModel)]="searchKey" placeholder="Search by header" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Filter by Category</mat-label>
+    <mat-select [(value)]="selectedCategory" (selectionChange)="filterByCategory()">
+      <mat-option value="">All</mat-option>
+      <mat-option *ngFor="let cat of categories" [value]="cat">{{ cat }}</mat-option>
+    </mat-select>
+  </mat-form-field>
 </div>
 
-  </body>
-  </html>
+<table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8 full-width">
 
-home.component.css
+  <!-- Header -->
+  <ng-container matColumnDef="post_header">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Header</th>
+    <td mat-cell *matCellDef="let post">{{ post.post_header }}</td>
+  </ng-container>
 
-.post-table {
-  width: 100%;
-  height: 100%;
-  border-spacing: 15px;
-  background: linear-gradient(135deg, #ffffff, #2999e342);
-} 
+  <ng-container matColumnDef="status">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+    <td mat-cell *matCellDef="let post">
+      <span [ngClass]="{'active': post.status === 'ACTIVE', 'inactive': post.status !== 'ACTIVE'}">
+        {{ post.status }}
+      </span>
+    </td>
+  </ng-container>
 
+  <ng-container matColumnDef="posted_by">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Posted By</th>
+    <td mat-cell *matCellDef="let post">{{ post.posted_by }}</td>
+  </ng-container>
 
-/* Row Flexbox */
-.post-row {
+  <ng-container matColumnDef="posted_at">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Posted At</th>
+    <td mat-cell *matCellDef="let post">{{ post.posted_at | date:'MMM d, y h:mm a' }}</td>
+  </ng-container>
 
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
+  <ng-container matColumnDef="category">
+    <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
+    <td mat-cell *matCellDef="let post">{{ post.category?.categoryName || 'Uncategorized' }}</td>
+  </ng-container>
 
-/* Card Style with Shadow */
-.post-card {
-  width: 250px;
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  border: 1px solid #ddd;
-  padding: 10px;
-  transition: transform 0.3s ease-in-out;
-  margin: 20px;
-  height: 230px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
+  <!-- Action Buttons -->
+  <ng-container matColumnDef="actions">
+    <th mat-header-cell *matHeaderCellDef>Actions</th>
+    <td mat-cell *matCellDef="let post">
+      <button mat-button color="primary" (click)="viewPost(post.post_id)">View</button>
 
-/* Fixed Header Height */ 
-.post-header {
-  
-  background: #3a5ce9;
-  color: rgb(255, 255, 255);
-  text-align: center;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 10px 10px 0 0;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-}
+      <ng-container *ngIf="loggedIn">
+        <button mat-button color="accent" (click)="editPost(post.post_id)">Edit</button>
+        <button mat-button color="warn" (click)="deletePost(post.post_id)">Delete</button>
+        <button mat-button [color]="post.status === 'ACTIVE' ? 'warn' : 'primary'" (click)="toggleStatus(post)">
+          {{ post.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+        </button>
+      </ng-container>
+    </td>
+  </ng-container>
 
-/* Smaller Post Info Section */
-.post-info {
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1);
-  padding: 5px;
-  border-radius: 5px;
-  font-size: 10px; /* Reduced font size */
-  margin: 5px;
-  line-height: 1.2;
-}
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
-/* Light Color and Smaller Size for Text */
-.posted-by, .post-status, .post-time {
-  padding: 1px 0;
-  margin: 0;
-  text-align: left;
-  color: #777;
-  font-weight: normal;
-  font-size: 10px; /* Smaller text */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+</table>
 
-/* Content Section with Hidden Scrollbar */
-.post-content {
-  padding: 5px;
-  font-size: 12px;
-  color: #333;
-  text-align: center;
-  height: 180px; /* Adjusted height */
-  overflow-y: scroll;
-  scrollbar-width: none;
-}
-
-.post-content::-webkit-scrollbar {
-  
-  display: none;
-}
-
-/* Button Container (For Logged-in Users) */
-.post-buttons {
-  display: flex;
-  justify-content: space-evenly;
-  padding: 5px;
-  border-top: 1px solid #ddd;
-  background: #fff;
-  position: relative;
-  bottom: 0;
-  width: 100%;
-}
-
-/* Buttons */
-button {
-  position: relative;
-  top: 15%;
-  background-color: #4cd5f7;
-  color: rgb(0, 0, 0);
-  padding: 4px 7px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.3s ease;
-}
-
-.button:hover{
-  background-color: #3a5ce9;
-  color: rgb(255, 255, 255);
-}
-
-
-.btn-2 {
-  background-color: #f50909bb;
-}
-
-
-.btn-1-1 {
-  background-color: #4cd5f7;
-  width: 95%;
-  height: 108%;
-}
-
-.btn-2:hover {
-  background-color: #c50606;
- 
-}
-
-/* [✅ New] Category title */
-.category-title {
-  font-size: 24px;
-  margin: 30px 15px 10px;
-
-  color: #2e3eec;
-
-}
-
-/* [✅ New] Search bar styling */
-.search-bar {
-  width: 250px;
-  margin: 0 15px 20px;
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-
-
-this is my code make a new component post-table in table it shuld have post header,satus,postedby,pastedat,category
-
-and view the post in mat table view and guide step step how to do that 
-
-and table must have serach and sorting feature and actino coloum which has edit, delete ,activate/deactivate ,view and only view should
-be visible if user is not logged in
 
 
