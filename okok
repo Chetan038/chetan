@@ -1,370 +1,256 @@
-import { Component, OnInit } from '@angular/core';
-import { LoginService } from '../../services/login.service';
-import {Post} from '../../services/post.model'
-import { PostService } from '../../services/post.service';
-import { MatDialog } from '@angular/material/dialog';
-import { Router } from '@angular/router';
-import { EditPostModalComponent } from '../edit-post-modal/edit-post-modal.component';
-
-
-@Component({
-  selector: 'app-home',
-  standalone: false,
-  templateUrl: './home.component.html',
-  styleUrl: './home.component.css'
-})
-export class HOMEComponent implements OnInit{
-
-    posts: Post[]=[];
-    groupedPosts:{[key:string]:Post[]}={};
-    searchTerms:{[key:string]:string}={};
-    public loggedIn=false;
-  
-    constructor(private readonly loginService:LoginService, private postService:PostService,private dialog:MatDialog,private router:Router){}
-    ngOnInit(): void {
-      this.loggedIn=this.loginService.isLoggedIn();
-      this.loadPosts();
-
-    }
-
-    loadPosts(){
-      this.postService.getPosts().subscribe(
-        (data: Post[])=>{
-          console.log('posts',data);
-          this.posts=data;
-          this.groupPostsByCategory();
-        },
-      (error)=>{console.error('erro',error);}
-      );
-      
-    }
-
-    deletePost(postid:number){
-      if(confirm('are you sure?'))
-      {
-        this.postService.deletePost(postid).subscribe(()=>{
-          this.posts=this.posts.filter(pst => pst.post_id!==postid);
-          this.groupPostsByCategory();
-        });
-      }
-    }
-
-
-    togglestatus(post:Post):void{
-      this.postService.togglestatus(post.post_id).subscribe((updatedPost)=>
-      {
-        post.status=updatedPost.status;
-      });
-    }
-
-    editPost(postId:number){
-      this.router.navigate(['/new-post',postId]);
-    }
-
-    viewPost(postId:number){
-      this.router.navigate(['/viewpost',postId],{queryParams:{mode:'view'}});
-    }
-
-    groupPostsByCategory(){
-      this.groupedPosts={};
-      this.searchTerms={};
-      this.posts.forEach(post=>{
-        if(post.status==='ACTIVE'||this.loggedIn){
-          const category=post.category?.categoryName||'Uncategorized';
-          if(!this.groupedPosts[category]){
-            this.groupedPosts[category]=[];
-            this.searchTerms[category]='';
-          }
-          this.groupedPosts[category].push(post);
-        }
-      });
-    }
-
-    getCategoryNames():string[]{
-      return Object.keys(this.groupedPosts);
-    }
-
-    filterPosts(posts: Post[], searchTerm: string): Post[] {
-      if (!searchTerm.trim()) return posts;
-      return posts.filter(post =>
-        post.post_header.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-  
-    updateSearch(category: string, event: any) {
-      this.searchTerms[category] = event.target.value;
-    }
-  
-  
-}
-
-
-
-###
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 </head>
 <body>
-<div class="category-container" *ngFor="let categoryName of getCategoryNames()">
-
-  <!-- [✅ New] Category Heading -->
-  <h2 class="category-title">{{ categoryName }}</h2>
-
-  <!-- [✅ New] Search Bar for Each Category -->
-  <input
-    type="text"
-    class="search-bar"
-    placeholder="Search post header..."
-    [value]="searchTerms[categoryName]"
-    (input)="updateSearch(categoryName, $event)"
-  />
-
-  <div class="post-row">
-    <!-- [✅ New] Filtered posts shown for that category -->
-    <ng-container *ngFor="let post of filterPosts(groupedPosts[categoryName], searchTerms[categoryName])">
-      <div class="post-card">
-        <div class="post-header">
-          <h3>{{ post.post_header }}</h3>
+  <div class="category-container" *ngFor="let categoryName of getCategoryNames()">
+    <h2 class="category-title">{{ categoryName }}</h2>
+    <input
+      type="text"
+      class="search-bar"
+      placeholder="Search post header..."
+      [value]="searchTerms[categoryName]"
+      (input)="updateSearch(categoryName, $event)"
+    />
+    <div class="post-row">
+      <ng-container *ngFor="let post of filterPosts(groupedPosts[categoryName], searchTerms[categoryName])">
+        <div class="post-card">
+          <div class="post-header">
+            <h3>{{ post.post_header }}</h3>
+          </div>
+          <div class="post-info">
+            <p class="posted-by" *ngIf="loggedIn"><strong>Post ID:</strong> {{ post.post_id }}</p>
+            <p class="posted-by"><strong>Posted by:</strong> {{ post.posted_by }}</p>
+            <p class="post-time"><strong>Posted at:</strong> {{ post.posted_at | date: 'MMM d, y h:mm a' }}</p>
+          </div>
+          <div class="post-content" *ngIf="!loggedIn">
+            <p>{{ post.post_content }}</p>
+          </div>
+          <div class="post-buttons">
+            <button class="btn-1" (click)="togglestatus(post)" *ngIf="loggedIn">
+              {{ post.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+            </button>
+            <button class="btn-1" (click)="editPost(post.post_id)" *ngIf="loggedIn">Edit</button>
+            <button class="btn-1" (click)="viewPost(post.post_id)" *ngIf="loggedIn">View</button>
+            <button class="btn-1-1" (click)="viewPost(post.post_id)" *ngIf="!loggedIn">View</button>
+            <button class="btn-2" (click)="deletePost(post.post_id)" *ngIf="loggedIn">Delete</button>
+          </div>
         </div>
-
-        <div class="post-info">
-          <p class="posted-by" *ngIf="loggedIn"><strong>Post ID:</strong> {{ post.post_id }}</p>
-          <p class="posted-by"><strong>Posted by:</strong> {{ post.posted_by }}</p>
-          <p class="post-time"><strong>Posted at:</strong> {{ post.posted_at | date: 'MMM d, y h:mm a' }}</p>
-        </div>
-
-        <div class="post-content" *ngIf="!loggedIn">
-          <p>{{ post.post_content }}</p>
-        </div>
-
-        <div class="post-buttons">
-          <button class="btn-1" (click)="togglestatus(post)" *ngIf="loggedIn">
-            {{ post.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
-          </button>
-          <button class="btn-1" (click)="editPost(post.post_id)" *ngIf="loggedIn">Edit</button>
-          <button class="btn-1" (click)="viewPost(post.post_id)"*ngIf="loggedIn">View</button>
-          <button class="btn-1-1" (click)="viewPost(post.post_id)" *ngIf="!loggedIn">View</button>
-          <button class="btn-2" (click)="deletePost(post.post_id)" *ngIf="loggedIn">Delete</button>
-        </div>
-      </div>
-    </ng-container>
+      </ng-container>
+    </div>
+    <p *ngIf="filterPosts(groupedPosts[categoryName], searchTerms[categoryName]).length === 0" style="color: gray; padding-left: 10px;">
+      No matching posts found.
+    </p>
   </div>
+  <div class="feature-icon" (click)="tableView()">
+    <svg width="53" height="30" top="20" viewBox="0 0 24 24" fill="none"  xmlns="http://www.w3.org/2000/svg" >
+      <rect x="3" y="3" width="8" height="8" rx="2" fill="white"/>
+      <rect x="13" y="3" width="8" height="8" rx="2" fill="white"/>
+      <rect x="3" y="13" width="8" height="8" rx="2" fill="white"/>
+      <rect x="13" y="13" width="8" height="8" rx="2" fill="white"/>
+    </svg>
+  </div>
+</body>
+</html>
 
-  <!--  Show when no posts match the search -->
-  <p *ngIf="filterPosts(groupedPosts[categoryName], searchTerms[categoryName]).length === 0" style="color: gray; padding-left: 10px;">
-    No matching posts found.
-  </p>
-
-</div>
-
-  </body>
-  </html>
-
-####
+css
 
 
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatSort } from '@angular/material/sort';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { Router } from '@angular/router';
-import { Post } from '../../services/post.model';
-import { PostService } from '../../services/post.service';
-import { LoginService } from '../../services/login.service';
-import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
-
-@Component({
-  selector: 'app-post-table',
-  templateUrl: './post-table.component.html',
-  standalone:false,
-  styleUrls: ['./post-table.component.css']
-})
-export class PostTableComponent implements OnInit {
-  displayedColumns: string[] = ['post_header', 'status', 'posted_by', 'posted_at', 'categoryName', 'actions'];
-  dataSource = new MatTableDataSource<Post>([]);
-  posts: Post[] = [];
-  categories: any[] = [];
-  loggedIn = false;
-  selectedCategory: string = '';
-  searchKey: string = '';
+html, body {
+  height: auto; 
+  margin: 0;
+  padding: 0;
+  background-color: #ebebed7d; 
   
-  @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-
-  constructor(
-    private postService: PostService,
-    private loginService: LoginService,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar,
-    private router: Router
-  ) {}
-
-  ngOnInit(): void {
-    this.loggedIn = this.loginService.isLoggedIn();
-    this.loadPosts();
-    this.loadCategories();
-  }
-
-  ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
-    this.setupCustomSort();
-  }
-
-  setupCustomSort() {
-    this.dataSource.sortingDataAccessor = (item, property) => {
-      switch(property) {
-        case 'categoryName': return item.category?.categoryName || '';
-        default: return (item as any)[property];
-      }
-    };
-  }
-
-  loadPosts() {
-    this.postService.getPosts().subscribe(
-      (data: Post[]) => {
-        this.posts = data;
-        this.applyFilters();
-      },
-      (error) => {
-        console.error('Error loading posts:', error);
-        this.snackBar.open('Error loading posts. Please try again later.', 'Close', {
-          duration: 3000
-        });
-      }
-    );
-  }
-
-  loadCategories() {
-    this.postService.getCategories().subscribe(
-      (data) => {
-        this.categories = data;
-      },
-      (error) => {
-        console.error('Error loading categories:', error);
-      }
-    );
-  }
-
-  applyFilters() {
-    let filteredPosts = [...this.posts];
-    
-   
-    if (!this.loggedIn) {
-      filteredPosts = filteredPosts.filter(post => post.status === 'ACTIVE');
-    }
-    
-
-    if (this.selectedCategory) {
-      filteredPosts = filteredPosts.filter(post => 
-        post.category?.categoryName === this.selectedCategory
-      );
-    }
-    
-    this.dataSource.data = filteredPosts;
-    this.applySearch();
-  }
-
-  applySearch() {
-    this.dataSource.filter = this.searchKey.trim().toLowerCase();
-    
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
-    }
-  }
-
-  onSearchClear() {
-    this.searchKey = "";
-    this.applySearch();
-  }
-
-  onCategoryChange() {
-    this.applyFilters();
-  }
-
-  deletePost(postId: number) {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '350px',
-      data: {
-        title: 'Confirm Delete',
-        message: 'Are you sure you want to delete this post?',
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel'
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.postService.deletePost(postId).subscribe(
-          () => {
-            
-            this.posts = this.posts.filter(post => post.post_id !== postId);
-            this.applyFilters();
-            this.snackBar.open('Post deleted successfully', 'Close', {
-              duration: 3000
-            });
-          },
-          error => {
-            console.error('Error deleting post:', error);
-            this.snackBar.open('Error deleting post', 'Close', {
-              duration: 3000
-            });
-          }
-        );
-      }
-    });
-  }
-
-  toggleStatus(post: Post) {
-    const action = post.status === 'ACTIVE' ? 'deactivate' : 'activate';
-    
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '350px',
-      data: {
-        title: `Confirm ${action}`,
-        message: `Are you sure you want to ${action} this post?`,
-        confirmButtonText: 'Yes',
-        cancelButtonText: 'Cancel'
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.postService.togglestatus(post.post_id).subscribe(
-          (updatedPost) => {
-            const index = this.posts.findIndex(p => p.post_id === post.post_id);
-            if (index !== -1) {
-              this.posts[index].status = updatedPost.status;
-              this.applyFilters();
-            }
-            this.snackBar.open(`Post ${action}d successfully`, 'Close', {
-              duration: 3000
-            });
-          },
-          error => {
-            console.error(`Error ${action}ing post:`, error);
-            this.snackBar.open(`Error ${action}ing post`, 'Close', {
-              duration: 3000
-            });
-          }
-        );
-      }
-    });
-  }
-
-  editPost(postId: number) {
-    this.router.navigate(['/new-post', postId]);
-  }
-
-  viewPost(postId: number) {
-    this.router.navigate(['/viewpost', postId], { queryParams: { mode: 'view' } });
-  }
-
-  getStatusClass(status: string): string {
-    return status === 'ACTIVE' ? 'status-active' : 'status-inactive';
-  }
 }
+
+body {  
+  background-image: url('https://www.renewallogistics.com/wp-content/uploads/bottom_overlay.png');
+  background-size: 900px 800px;
+  background-repeat: no-repeat;
+  background-position: 650px -290px; 
+  font-family: 'Poppins', sans-serif; 
+}
+
+
+.post-table {
+  width: 100%;
+  height: 100%;
+  border-spacing: 15px;
+  background: linear-gradient(135deg, #ffffff, #2999e342);
+} 
+
+.body{
+  background-color: #ebebed; 
+}
+
+
+.post-row {
+
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.post-card {
+  width: 250px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  border: 1px solid #ddd;
+  padding: 10px;
+  transition: transform 0.3s ease-in-out;
+  margin: 20px;
+  height: 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.post-header {
+  
+  background: #3a5ce9;
+  color: rgb(255, 255, 255);
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 10px 10px 0 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.post-info {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1);
+  padding: 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  margin: 5px;
+  line-height: 1.2;
+}
+
+.posted-by, .post-status, .post-time {
+  padding: 1px 0;
+  margin: 0;
+  text-align: left;
+  color: #777;
+  font-weight: normal;
+  font-size: 10px; 
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.post-content {
+  padding: 5px;
+  font-size: 12px;
+  color: #333;
+  text-align: center;
+  height: 180px; 
+  overflow-y: scroll;
+  scrollbar-width: none;
+}
+
+.post-content::-webkit-scrollbar {
+  
+  display: none;
+}
+
+
+.post-buttons {
+  display: flex;
+  justify-content: space-evenly;
+  padding: 5px;
+  border-top: 1px solid #ddd;
+  background: #fff;
+  position: relative;
+  bottom: 0;
+  width: 100%;
+}
+
+
+button {
+  position: relative;
+  top: 15%;
+  background-color: #4cd5f7;
+  color: rgb(20, 19, 19);
+  padding: 4px 7px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover{
+  background-color: #3a5ce9;
+  color: rgb(255, 255, 255);
+}
+
+
+.btn-2 {
+  background-color: #f50909bb;
+}
+
+
+.btn-1-1 {
+  background-color: #4cd5f7;
+  width: 95%;
+  height: 108%;
+}
+
+.btn-2:hover {
+  background-color: #c50606;
+ 
+}
+
+
+.category-title {
+  font-size: 24px;
+  margin: 0; 
+  padding: 10px; 
+  color: #2e3eec;
+  background-color: #ebebed00; 
+  border-radius: 5px; 
+  width: 20%;
+}
+
+
+.search-bar {
+  width: 250px;
+  margin: 0 15px 20px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+
+.feature-icon {
+  position:absolute;
+  top: 15% !important;
+  right: 4px !important;
+  cursor: pointer;
+  border-radius: 10px;
+  height: 5%;
+  width: 4%;
+
+}
+
+body {  
+  background-image: url('https://www.renewallogistics.com/wp-content/uploads/bottom_overlay.png');
+  background-size: 900px 800px;
+  background-repeat: no-repeat;
+  background-position: 650px -290px; 
+  font-family: 'Poppins', sans-serif; 
+}
+
+so move this image when scorlled from top right to middle then in bottom left in somooth animation effect when scrolled
